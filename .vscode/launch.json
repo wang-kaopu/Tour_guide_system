@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "g++.exe - 生成和调试活动文件",
+            "type": "cppdbg",
+            "request": "launch",
+            // "program": "D:\\Code\\VisualStudioCode\\20241109\\hello.exe",//只需要把E:\\C++改成自己代码的工作路径即可
+            "program": "${fileDirname}\\exe\\${fileBasenameNoExtension}.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole":  false,
+            "MIMode": "gdb",
+            // "miDebuggerPath": "D:\\Develop\\MinGW\\bin\\gdb.exe",//把E:\\mingw64换成自己的mingw64存放的路径
+            "miDebuggerPath": "D:\\Develop\\msys64\\mingw64\\bin\\gdb.exe",//把E:\\mingw64换成自己的mingw64存放的路径
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": false
+                }, 
+                {
+                    "description": "Test",
+                    "text": "python import sys;sys.path.insert(0, 'D:/Develop/msys64/mingw64/share/gdb/python/.gdb');from printers import register_libstdcxx_printers;register_libstdcxx_printers (None)",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++.exe 生成活动文件",
+        }
+    ]
+}

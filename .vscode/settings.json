@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "iostream": "cpp",
+        "ostream": "cpp",
+        "string": "cpp",
+        "deque": "cpp",
+        "vector": "cpp",
+        "array": "cpp",
+        "unordered_map": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "main.h": "cpp"
+    },
+    "cSpell.words": [
+        "adjvex",
+        "vexs"
+    ],
+    "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
+}
