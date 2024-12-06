@@ -8,6 +8,7 @@
 #include <limits.h>
 #include "tool.h"
 #include "tree.h"
+#include "queue.h"
 
 #define OK 1
 #define ERROR 0
@@ -466,29 +467,45 @@ CSTree SearchPathBFS(UDN G, int bg, int end) {
         memmove(G.tags, ori_tags, sizeof(int) * G.n);
     }
     free(ori_tags);
+    if (NULL == root->firstChild) {
+        return NULL;
+    }
     return root;
 }
 
-void PrintCSTree(CSTree T) {
-	if (NULL == T) {
-		printf("#");
-		return;
-	}
-	printf("%d", T->data);
-	CSTree p = T->firstChild;
-	int flag = (p != NULL);
-	if (flag) {
-		printf("(");
-	}
-	while (p) {
-		PrintCSTree(p);
-		if (p->nextSibling) {
-			printf(",");
-		}
-		p = p->nextSibling;
-	}
-	if (flag) {
-		printf(")");
-	}
-}
+typedef struct {
+    int* sq;
+    int n = 0;
+} *TopSq;
 
+Status ToplogicalSort(UDN G) {
+    int* indegree = (int*)malloc(sizeof(int) * G.n);
+    LQueue Q;
+    InitQueue_LQ(Q);
+    memset(indegree, 0, sizeof(int) * G.n);
+    for (int i = 0; i < G.n; ++i) {
+        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+            ++indegree[p->adjvex];
+        }
+    }
+    for (int i = 0; i < G.n; ++i) {
+        if (0 == indegree[i]) {
+            EnQueue_LQ(Q, i);
+        }
+    }
+    int i = -1, count = 0;
+    while (OK == DeQueue_LQ(Q, i)) {
+        printf("%d", G.vexs[i].id);
+        ++count;
+        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+            if (0 == --indegree[p->adjvex]) {
+                EnQueue_LQ(Q, p->adjvex);
+            }       
+        }
+    }
+    free(indegree);
+    if (count < G.n) {
+        return ERROR;
+    }
+    return OK;
+}

@@ -52,3 +52,26 @@ Status InsertChild(CSTree& T, CSTree c) {
 	}
 	return OK;
 }
+
+void PrintCSTree(CSTree T) {
+	if (NULL == T) {
+		printf("#");
+		return;
+	}
+	printf("%d", T->data);
+	CSTree p = T->firstChild;
+	int flag = (p != NULL);
+	if (flag) {
+		printf("(");
+	}
+	while (p) {
+		PrintCSTree(p);
+		if (p->nextSibling) {
+			printf(",");
+		}
+		p = p->nextSibling;
+	}
+	if (flag) {
+		printf(")");
+	}
+}

@@ -57,7 +57,7 @@ int main() {
     }
     printf("\n");
 
-    CSTree ret = SearchPathBFS(G, 1, 0);
+    CSTree ret = SearchPathBFS(G, 1, 1);
     PrintCSTree(ret);
     // DistInfo* Dist = (DistInfo*)malloc(sizeof(DistInfo) * G.n);
     // Dijkstra(G, 1, Dist);
