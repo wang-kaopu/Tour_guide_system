@@ -61,6 +61,12 @@ typedef struct {
 	int* tags; // 标志数组，可用于在图的遍历中标记顶点访问与否
 } UDN;
 
+typedef struct {
+	VexNode* vexs; // 顶点数组。vertex, 顶点
+	int n, e; // n: 顶点数; e: 边数（弧数）
+	int* tags; // 标志数组，可用于在图的遍历中标记顶点访问与否
+} DN;
+
 // *
 // 通过id找到顶点v在顶点数组vexs中的位置，查找成功则返回位置下标，否则返回-1
 // G: 图
@@ -156,11 +162,11 @@ Status CreateUDN(UDN &G, VexType *vexs, char** name, int n, ArcInfo *arcs, int e
         node->weight = arcs[i].weight;
         G.vexs[v_loc].firstArc = node;
 
-        // node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
-        // node->next = G.vexs[w_loc].firstArc;
-        // node->adjvex = v_loc;
-        // node->weight = arcs[i].weight;
-        // G.vexs[w_loc].firstArc = node;
+        node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
+        node->next = G.vexs[w_loc].firstArc;
+        node->adjvex = v_loc;
+        node->weight = arcs[i].weight;
+        G.vexs[w_loc].firstArc = node;
     }
     return OK;
 }
@@ -475,14 +481,50 @@ CSTree SearchPathBFS(UDN G, int bg, int end) {
 
 typedef struct {
     int* sq;
-    int n = 0;
-} *TopSq;
+    int n;
+} TopSq;
 
-Status ToplogicalSort(UDN G) {
+void InitTopSq(TopSq& TS, int n) {
+    TS.sq = (int*)malloc(sizeof(int) * n);
+    TS.n = 0;
+}
+
+void UDN_to_DN (UDN& G) {
+    // 无向图 -> 有向图
+    for (int i = 0; i < G.n; ++i) {
+        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+            int j = p->adjvex;
+            AdjVexNode* q = G.vexs[j].firstArc;
+            AdjVexNode* tmp = NULL;
+            if (q->adjvex == i) {
+                tmp = q;
+                G.vexs[j].firstArc = q->next;
+            }
+            else {
+                for (; q && q->next; q = q->next) {
+                    if (q->next->adjvex == i) {
+                        tmp = q->next;
+                        q->next = q->next->next;
+                    }
+                }
+            }
+            free(tmp);
+        }
+    }
+}
+
+Status ToplogicalSort(UDN G, TopSq& TS) {
+    
+    UDN_to_DN(G);
+
     int* indegree = (int*)malloc(sizeof(int) * G.n);
+    memset(indegree, 0, sizeof(int) * G.n);
+    
     LQueue Q;
     InitQueue_LQ(Q);
-    memset(indegree, 0, sizeof(int) * G.n);
+
+    InitTopSq(TS, G.n);
+
     for (int i = 0; i < G.n; ++i) {
         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
             ++indegree[p->adjvex];
@@ -495,7 +537,8 @@ Status ToplogicalSort(UDN G) {
     }
     int i = -1, count = 0;
     while (OK == DeQueue_LQ(Q, i)) {
-        printf("%d", G.vexs[i].id);
+        // printf("%d", G.vexs[i].id);
+        TS.sq[TS.n++] = i;
         ++count;
         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
             if (0 == --indegree[p->adjvex]) {

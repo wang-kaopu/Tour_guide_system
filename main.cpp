@@ -43,9 +43,9 @@ int main() {
     // SetArc(G, 5, 1, 2);
     // SetArc(G, 3, 5, 7);
     
-    char* name = (char*)"夏日";
-    char* vexInfo = (char*)"天鹅";
-    AddVex(G, name, vexInfo);
+    // char* name = (char*)"夏日";
+    // char* vexInfo = (char*)"天鹅";
+    // AddVex(G, name, vexInfo);
 
     VexNode* nodes = G.vexs;
     for (int i = 0; i < G.n; ++i) {
@@ -57,8 +57,18 @@ int main() {
     }
     printf("\n");
 
-    CSTree ret = SearchPathBFS(G, 1, 1);
-    PrintCSTree(ret);
+    // CSTree ret = SearchPathBFS(G, 1, 1);
+    // PrintCSTree(ret);
+    // printf("\n");
+
+    TopSq TS;
+    InitTopSq(TS, G.n);
+    int result = ToplogicalSort(G, TS);
+    printf("%d\n", result);
+    for (int i = 0; i < TS.n; ++i) {
+        printf("%d->", TS.sq[i]);
+    }
+
     // DistInfo* Dist = (DistInfo*)malloc(sizeof(DistInfo) * G.n);
     // Dijkstra(G, 1, Dist);
     // for (int i = 0;i < G.n; ++i) {
@@ -71,5 +81,18 @@ int main() {
     // OutputAllArcs(G);
     
     // DFS(G);
+
+    // UDN_to_DN(G);
+
+    // nodes = G.vexs;
+    // for (int i = 0; i < G.n; ++i) {
+    //     printf("%d:", nodes[i].id - 1);
+    //     for (AdjVexNode* p = nodes[i].firstArc; p; p = p->next) {
+    //         printf("%d(%d) ", p->adjvex, p->weight);
+    //     }
+    //     printf("\n");
+    // }
+
+    // ToplogicalSort(G);
     return 0;
 }
