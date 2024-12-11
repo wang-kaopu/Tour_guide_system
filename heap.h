@@ -118,3 +118,109 @@ int greaterPrior(int x, int y);
 /// <param name="y"></param>
 /// <returns></returns>
 int lessPrior(int x, int y);
+
+Status InitHeap(Heap& H, int size, int tag, int(*prior)(KeyType x, KeyType y)) {
+	Heap* p = (Heap*)malloc(sizeof(Heap));
+	if (NULL == p) {
+		return ERROR;
+	}
+	H = *p;
+	H.size = size;
+	H.n = 0;
+	H.tag = tag;
+	H.prior = prior;
+	return OK;
+}
+void MakeHeap(Heap& H, RcdType* E, int n, int size, int tag, int(*prior)(KeyType x, KeyType y)) {
+	H.rcd = E;
+	H.n = n;
+	H.size = size;
+	H.tag = tag;
+	H.prior = prior;
+	for (int p = H.n / 2;p >= 1;--p) {
+		ShiftDown(H, p);
+	}
+	//for (int i = 0; i < 40;++i) {
+	//	printf("%d ", H.rcd[i + 1]);
+	//}
+	//printf("\n");
+}
+Status DestroyHeap(Heap& H) {
+	free(&H);
+	return OK;
+}
+Status SwapHeapElem(Heap& H, int i, int j) {
+	if (i <= 0 || i > H.n || j <= 0 || j > H.n) {
+		return ERROR;
+	}
+	RcdType tmp = H.rcd[i];
+	H.rcd[i] = H.rcd[j];
+	H.rcd[j] = tmp;
+	return OK;
+}
+void ShiftDown(Heap& H, int pos) {
+	while (pos <= H.n / 2) {
+		int rchild = pos * 2 + 1, p = pos * 2;
+		if (rchild <= H.n && H.prior(H.rcd[rchild].key, H.rcd[p].key)) {
+			p = rchild;
+		}
+		if (H.prior(H.rcd[pos].key, H.rcd[p].key)) {
+			return;
+		}
+		SwapHeapElem(H, pos, p);
+		pos = p;
+	}
+}
+Status InsertHeap(Heap& H, RcdType e) {
+	if (H.n > H.size - 1) {
+		return ERROR;
+	}
+	H.rcd[++H.n] = e;
+	for (int p = H.n;p / 2 >= 1 && H.prior(H.rcd[p].key, H.rcd[p / 2].key);p /= 2) {
+		SwapHeapElem(H, p, p / 2); //不用shiftDown是因为p的兄弟和p的父亲这两个一定有序，shiftDwon还会判断这对之后再决定是否交换
+	}
+	return OK;
+}
+Status RemoveFirstHeap(Heap& H, RcdType& e) {
+	if (0 >= H.n) {
+		return ERROR;
+	}
+	e = H.rcd[1];
+	SwapHeapElem(H, 1, H.n);
+	H.n--;
+	if (H.n > 1) {
+		ShiftDown(H, 1);
+	}
+	return OK;
+}
+Status RemoveHeap(Heap& H, int pos, RcdType& e) {
+	if (0 == H.n) {
+		return ERROR;
+	}
+	e = H.rcd[pos];
+	SwapHeapElem(H, pos, H.n);
+	H.n--;
+	if (H.n > 1) {
+		ShiftDown(H, pos);
+	}
+	return OK;
+}
+
+void HeapSort(RcdType* rcd, int length, int size, int tag, int (*prior)(KeyType x, KeyType y)) {
+	Heap H;
+	RcdType r;
+	MakeHeap(H, rcd, length, size, tag, prior);
+	while (H.n >= 1) {
+		RemoveFirstHeap(H, r);
+	}
+}
+
+// 大顶堆优先函数
+int greaterPrior(int x, int y) {
+	return x >= y;
+}
+
+// 小顶堆优先函数
+int lessPrior(int x, int y) {
+	return x <= y;
+}

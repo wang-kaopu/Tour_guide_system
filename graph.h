@@ -10,6 +10,7 @@
 #include "tree.h"
 #include "queue.h"
 #include "heap.h"
+#include "union_find_sets.h"
 
 #define OK 1
 #define ERROR 0
@@ -515,14 +516,23 @@ void UDN_to_DN (UDN& G) {
     }
 }
 
-// // 求最小生成树：Kruscal算法
-// typedef struct {
-//     int v, w;
-//     int key;
-// } KruscalRcdType;
+// 求最小生成树：Kruscal算法
+typedef struct {
+    int v, w;
+    int key;
+} KruscalRcdType;
 
-// // 构造G的最小生成树T
+// 构造G的最小生成树T
 // Status Kruscal(UDN G, UDN& T) {
+//     // 初始化T
+//     T.n = G.n;
+//     T.e = 0;
+//     T.vexs = (VexNode*)malloc(sizeof(VexNode) * T.n);
+//     memmove(T.vexs, G.vexs, sizeof(VexNode) * T.n);
+//     for (int i = 0; i < T.n; ++i) {
+//         T.vexs[i].firstArc  = NULL;
+//     }
+//     // 
 
 // }
 
