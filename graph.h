@@ -9,6 +9,7 @@
 #include "tool.h"
 #include "tree.h"
 #include "queue.h"
+#include "heap.h"
 
 #define OK 1
 #define ERROR 0
@@ -484,13 +485,14 @@ typedef struct {
     int n;
 } TopSq;
 
+// 初始化拓扑排序辅助类型TopSq
 void InitTopSq(TopSq& TS, int n) {
     TS.sq = (int*)malloc(sizeof(int) * n);
     TS.n = 0;
 }
 
+// 无向图 -> 有向图
 void UDN_to_DN (UDN& G) {
-    // 无向图 -> 有向图
     for (int i = 0; i < G.n; ++i) {
         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
             int j = p->adjvex;
@@ -513,42 +515,97 @@ void UDN_to_DN (UDN& G) {
     }
 }
 
-Status ToplogicalSort(UDN G, TopSq& TS) {
-    
-    UDN_to_DN(G);
+// // 求最小生成树：Kruscal算法
+// typedef struct {
+//     int v, w;
+//     int key;
+// } KruscalRcdType;
 
+// // 构造G的最小生成树T
+// Status Kruscal(UDN G, UDN& T) {
+
+// }
+
+// 拓扑排序
+Status ToplogicalSort(UDN G, TopSq& TS) {
+    // 将有向图转化为无向图
+    UDN_to_DN(G);
+    // 辅助数组indegree，记录顶点入度
     int* indegree = (int*)malloc(sizeof(int) * G.n);
     memset(indegree, 0, sizeof(int) * G.n);
-    
+    // 辅助队列Q
     LQueue Q;
     InitQueue_LQ(Q);
-
+    // 初始化辅助结构TopSq拓扑序列
     InitTopSq(TS, G.n);
-
+    // 计算所有顶点的入度，存入indegree
     for (int i = 0; i < G.n; ++i) {
         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
             ++indegree[p->adjvex];
         }
     }
+    // 搜寻所有入度为0的顶点，入队
     for (int i = 0; i < G.n; ++i) {
         if (0 == indegree[i]) {
             EnQueue_LQ(Q, i);
         }
     }
+    // 反复出队、加入拓扑序列、删除所有其出度的弧、搜寻、入队……
     int i = -1, count = 0;
     while (OK == DeQueue_LQ(Q, i)) {
-        // printf("%d", G.vexs[i].id);
         TS.sq[TS.n++] = i;
         ++count;
         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
             if (0 == --indegree[p->adjvex]) {
                 EnQueue_LQ(Q, p->adjvex);
-            }       
+            }
         }
     }
+    // 释放辅助数组indegree空间
     free(indegree);
+    // 判断是否成功生成拓扑序列
     if (count < G.n) {
         return ERROR;
     }
     return OK;
+}
+
+// 根据给定的顶点位置数组locs和顶点个数n，生成子图
+// 根据子图生成最小生成树
+// 子图->最小生成树（kruscal）
+void PathPlanning(UDN G, int* locs, int n) {
+    VexNode* nodes = (VexNode*)malloc(sizeof(VexNode) * n);
+    if (NULL == nodes)  return;
+    int k = 0;
+    for (int i = 0; i < n; ++i) {
+        nodes[k++] = G.vexs[locs[i]];
+    }
+    int e = 0;
+    for (int i = 0; i < n; ++i) {
+        for(AdjVexNode* p = nodes->firstArc; p; p = p->next) {
+            ++e;
+        }
+    }
+    int* tags = (int*)malloc(sizeof(int) * n);
+    memset(tags, 0, sizeof(int) * n);
+    UDN subG = {nodes, n, e, tags};
+
+    nodes = subG.vexs;
+    for (int i = 0; i < subG.n; ++i) {
+        printf("%d:", nodes[i].id - 1);
+        for (AdjVexNode* p = nodes[i].firstArc; p; p = p->next) {
+            printf("%d(%d) ", p->adjvex, p->weight);
+        }
+        printf("\n");
+    }
+    printf("\n");
+
+    // TopSq TS;
+    // InitTopSq(TS, subG.n);
+    // int result = ToplogicalSort(subG, TS);
+    // printf("%d\n", result);
+    // for (int i = 0; i < TS.n; ++i) {
+    //     printf("%d->", TS.sq[i]);
+    // }
+    // printf("\n");
 }

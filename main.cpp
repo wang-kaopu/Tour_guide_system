@@ -61,13 +61,14 @@ int main() {
     // PrintCSTree(ret);
     // printf("\n");
 
-    TopSq TS;
-    InitTopSq(TS, G.n);
-    int result = ToplogicalSort(G, TS);
-    printf("%d\n", result);
-    for (int i = 0; i < TS.n; ++i) {
-        printf("%d->", TS.sq[i]);
-    }
+    // TopSq TS;
+    // InitTopSq(TS, G.n);
+    // int result = ToplogicalSort(G, TS);
+    // printf("%d\n", result);
+    // for (int i = 0; i < TS.n; ++i) {
+    //     printf("%d->", TS.sq[i]);
+    // }
+    // printf("\n");
 
     // DistInfo* Dist = (DistInfo*)malloc(sizeof(DistInfo) * G.n);
     // Dijkstra(G, 1, Dist);
@@ -94,5 +95,8 @@ int main() {
     // }
 
     // ToplogicalSort(G);
+
+    int locs[] = {0, 1, 4};
+    PathPlanning(G, locs, 3);
     return 0;
 }
