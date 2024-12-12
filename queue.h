@@ -87,3 +87,30 @@ Status DeQueue_LQ(LQueue& Q, Elemtype& e) {
 	free(node);
 	return OK;
 }
+
+void CopyQueue_LQ(LQueue& T, LQueue Q) {
+	// LQNode* node = (LQNode*)malloc(sizeof(LQNode));
+	// if (NULL == node) {
+	// 	return;
+	// }
+	// node->next = NULL;
+	// T.front = T.rear = node;
+	LQNode* p = Q.front;
+	InitQueue_LQ(T);
+	while (p->next) {
+		EnQueue_LQ(T, p->data);
+		p = p->next;
+	}
+}
+
+void PrintQueue_LQ(LQueue Q) {
+	QueuePtr p = Q.front;
+	if (p->next) {
+		printf("%d", p->data);
+	}
+	p = p->next;
+	while (p->next) {
+		printf("->%d", p->data);
+		p = p->next;
+	}
+}

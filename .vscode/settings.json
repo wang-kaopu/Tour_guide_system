@@ -17,5 +17,6 @@
         "kruscal",
         "vexs"
     ],
-    "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
+    "C_Cpp.errorSquiggles": "enabledIfIncludesResolve",
+    "C_Cpp.autocomplete": "default"
 }

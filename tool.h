@@ -29,3 +29,12 @@ void* deleteFromArray(void* begin, size_t n, int targetLocation, size_t size) {
     }
     return arr;
 }
+
+int SearchInArray(int* arr, int target, int n) {
+    for (int i = 0; i < n; ++i) {
+        if (arr[i] == target) {
+            return i;
+        }
+    }
+    return -1;
+}

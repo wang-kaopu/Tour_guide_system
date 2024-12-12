@@ -15,9 +15,17 @@ typedef int KeyType;
 
 // 记录类型
 // key: 该记录的关键字
+// typedef struct {
+// 	KeyType key;
+// }RcdType;
+
+// 求最小生成树：Kruscal算法
 typedef struct {
-	KeyType key;
-}RcdType;
+    int v, w;
+    int key;
+} KruscalRcdType;
+
+typedef KruscalRcdType RcdType;
 
 // 堆类型
 // rcd: 记录数组

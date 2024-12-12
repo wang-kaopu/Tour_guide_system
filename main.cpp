@@ -96,7 +96,14 @@ int main() {
 
     // ToplogicalSort(G);
 
-    int locs[] = {0, 1, 4};
-    PathPlanning(G, locs, 3);
+    int locs[] = {0, 1, 3, 4};
+    LQueue Q;
+    PathPlanning(G, locs, 4, Q);
+        // QueuePtr p = Q.front;
+        // while (p->next) {
+        //     printf("%d->",p->data);
+        //     p = p->next;
+        // }
+    PrintQueue_LQ(Q);
     return 0;
 }

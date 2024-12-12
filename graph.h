@@ -202,6 +202,34 @@ Status SetArc(UDN &G, VexType v_id, VexType w_id, int weight)
     return OK;
 }
 
+// 在图G中添加从顶点v到顶点w的弧
+// G：图
+// v_id：出度顶点
+// w_id：入度顶点
+// weight：权
+Status SetDirectedArc(UDN &G, VexType v_id, VexType w_id, int weight) 
+{  
+    int v_loc = LocateVex(G, v_id);
+    int w_loc = LocateVex(G, w_id);
+    if (v_loc < 0 || w_loc < 0) {
+        return ERROR;
+    }
+    AdjVexNode* node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
+    node->next = G.vexs[v_loc].firstArc;
+    node->adjvex = w_loc;
+    node->weight = weight;
+    G.vexs[v_loc].firstArc = node;
+
+    // node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
+    // node->next = G.vexs[w_loc].firstArc;
+    // node->adjvex = v_loc;
+    // node->weight = weight;
+    // G.vexs[w_loc].firstArc = node;
+
+    G.e++;
+    return OK;
+}
+
 
 // 修改指定id的顶点名称和顶点信息
 // G：图
@@ -404,39 +432,6 @@ void OutputAllArcs(UDN G) {
     }
 }
 
-void DFSprint(UDN& G, int i) {
-    if (i < 0 || i >= G.n) {
-        return;
-    }
-    printf("%d\t", G.vexs[i].id);
-    if (G.vexs[i].name == NULL) {
-        printf("（空）\t");
-    }
-    else {
-        printf("%s\t", G.vexs[i].name);
-    }
-    if (G.vexs[i].vexInfo == NULL) {
-        printf("（空）\t\n");
-    }
-    else {
-        printf("%s\t\n", G.vexs[i].vexInfo);
-    }
-    G.tags[i] = 1;
-    if (NULL != G.vexs[i].firstArc && G.tags[G.vexs[i].firstArc->adjvex] == 0) {
-        DFSprint(G, G.vexs[i].firstArc->adjvex);
-    }
-}
-
-// 深度优先遍历
-void DFS(UDN& G) {
-    memset(G.tags, sizeof(int) * G.n, 0);
-    for (int i = 0;i < G.n; ++i) {
-        if (G.tags[i] == 0) {
-            DFSprint(G, i);
-        }
-    }
-}
-
 Status PrintSearchPathDFS(UDN G, int prev, int target) {
     if (target == prev) {
         return OK;
@@ -499,7 +494,7 @@ void UDN_to_DN (UDN& G) {
             int j = p->adjvex;
             AdjVexNode* q = G.vexs[j].firstArc;
             AdjVexNode* tmp = NULL;
-            if (q->adjvex == i) {
+            if (q && q->adjvex == i) {
                 tmp = q;
                 G.vexs[j].firstArc = q->next;
             }
@@ -517,24 +512,56 @@ void UDN_to_DN (UDN& G) {
 }
 
 // 求最小生成树：Kruscal算法
-typedef struct {
-    int v, w;
-    int key;
-} KruscalRcdType;
+// typedef struct {
+//     int v, w;
+//     int key;
+// } KruscalRcdType;
+
+// typedef KruscalRcdType RcdType
 
 // 构造G的最小生成树T
-// Status Kruscal(UDN G, UDN& T) {
-//     // 初始化T
-//     T.n = G.n;
-//     T.e = 0;
-//     T.vexs = (VexNode*)malloc(sizeof(VexNode) * T.n);
-//     memmove(T.vexs, G.vexs, sizeof(VexNode) * T.n);
-//     for (int i = 0; i < T.n; ++i) {
-//         T.vexs[i].firstArc  = NULL;
-//     }
-//     // 
+Status Kruscal(UDN G, UDN& T) {
+    // 初始化T
+    T.n = G.n;
+    T.e = 0;
+    T.vexs = (VexNode*)malloc(sizeof(VexNode) * T.n);
+    memmove(T.vexs, G.vexs, sizeof(VexNode) * T.n);
+    for (int i = 0; i < T.n; ++i) {
+        T.vexs[i].firstArc  = NULL;
+    }
+    // 初始化并查集
+    MFSet S;
+    InitMFSet(S, T.n);
+    // 准备辅助数组arcs
+    KruscalRcdType* arcs = (KruscalRcdType*)malloc((G.e + 1) * sizeof(KruscalRcdType));
+    int j = 1;
+    // 开始计算
+    Heap H;
+    for (int i = 0; i < T.n; ++i) {
+        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+            if (i < p->adjvex) {
+                arcs[j].v = i;
+                arcs[j].w = p->adjvex;
+                arcs[j].key = p->weight;
+                ++j;
+            }
+        }
+        MakeHeap(H, arcs, G.e, G.e + 1, 0, lessPrior);
+        for (int i = 0; i < G.e; ++i) {
+            RcdType tmp;
+            RemoveFirstHeap(H, tmp);
+            int v_id = G.vexs[tmp.v].id;
+            int w_id = G.vexs[tmp.w].id;
+            if (UnionMFSet(S, tmp.v, tmp.w)) {
+                SetArc(T, v_id, w_id, tmp.key);
+                if (T.e == G.n - 1) {
+                    break;
+                }
+            }
+        }
+    }
 
-// }
+}
 
 // 拓扑排序
 Status ToplogicalSort(UDN G, TopSq& TS) {
@@ -581,41 +608,188 @@ Status ToplogicalSort(UDN G, TopSq& TS) {
 }
 
 // 根据给定的顶点位置数组locs和顶点个数n，生成子图
-// 根据子图生成最小生成树
-// 子图->最小生成树（kruscal）
-void PathPlanning(UDN G, int* locs, int n) {
-    VexNode* nodes = (VexNode*)malloc(sizeof(VexNode) * n);
-    if (NULL == nodes)  return;
-    int k = 0;
+void GenerateSubGraph(UDN G, int* locs, int n, UDN& T) {
+    // 建立数组（哈希表），映射：locs数组的下标->(locs数组的元素->)G.vexs[locs].id
+    int ids[n] = {0};
     for (int i = 0; i < n; ++i) {
-        nodes[k++] = G.vexs[locs[i]];
+        ids[i] = G.vexs[locs[i]].id;
     }
-    int e = 0;
+    // 初始化T
+    T.vexs = (VexNode*)malloc(sizeof(VexNode) * n);
+    T.e = 0;
+    T.n = n;
+    T.tags = (int*)malloc(sizeof(int) * n);
+    memset(T.tags, 0, sizeof(int) * n);
     for (int i = 0; i < n; ++i) {
-        for(AdjVexNode* p = nodes->firstArc; p; p = p->next) {
-            ++e;
+        int loc = locs[i];
+        T.vexs[i].id = G.vexs[loc].id;
+        T.vexs[i].name = G.vexs[loc].name;
+        T.vexs[i].vexInfo = G.vexs[loc].vexInfo;
+        T.vexs[i].firstArc = NULL;
+    }
+    for (int i = 0; i < n; ++i) {
+        int loc = locs[i];
+        for (AdjVexNode* p = G.vexs[loc].firstArc; p; p = p->next) {
+            if (loc < p->adjvex && -1 != SearchInArray(locs, p->adjvex, n)) {
+                SetDirectedArc(T, G.vexs[loc].id, G.vexs[p->adjvex].id, p->weight);
+            }
         }
     }
-    int* tags = (int*)malloc(sizeof(int) * n);
-    memset(tags, 0, sizeof(int) * n);
-    UDN subG = {nodes, n, e, tags};
+}
 
-    nodes = subG.vexs;
-    for (int i = 0; i < subG.n; ++i) {
-        printf("%d:", nodes[i].id - 1);
-        for (AdjVexNode* p = nodes[i].firstArc; p; p = p->next) {
-            printf("%d(%d) ", p->adjvex, p->weight);
-        }
-        printf("\n");
+Status PathToQueue(UDN& G, DistInfo* Dist, int k, LQueue& Q, int* flags) {
+    if (k < 0) {
+        return TRUE;
     }
-    printf("\n");
+    if (flags[k] == 1) {
+        return FALSE;
+    }
+    flags[k] = 1;
+    PathToQueue(G, Dist, Dist[k].prev, Q, flags);
+    EnQueue_LQ(Q, k);
+    return TRUE;
+}
 
+void DFSprint(UDN& G, int i) {
+    if (i < 0 || i >= G.n) {
+        return;
+    }
+    printf("%d\t", G.vexs[i].id);
+    if (G.vexs[i].name == NULL) {
+        printf("（空）\t");
+    }
+    else {
+        printf("%s\t", G.vexs[i].name);
+    }
+    if (G.vexs[i].vexInfo == NULL) {
+        printf("（空）\t\n");
+    }
+    else {
+        printf("%s\t\n", G.vexs[i].vexInfo);
+    }
+    G.tags[i] = 1;
+    if (NULL != G.vexs[i].firstArc && G.tags[G.vexs[i].firstArc->adjvex] == 0) {
+        DFSprint(G, G.vexs[i].firstArc->adjvex);
+    }
+}
+
+// 深度优先遍历
+void DFS(UDN& G) {
+    memset(G.tags, sizeof(int) * G.n, 0);
+    for (int i = 0;i < G.n; ++i) {
+        if (G.tags[i] == 0) {
+            DFSprint(G, i);
+        }
+    }
+}
+
+void DFSCount(CSTree tree, int* locs, int n, LQueue& Q, int& length) {
+    if (NULL == tree || length == n) {
+        return;
+    }
+    EnQueue_LQ(Q, tree->data);
+    if (SearchInArray(locs, tree->data, n) != -1) {
+        length++;
+    }
+    LQueue ori;
+    CopyQueue_LQ(ori, Q);
+    if (tree->firstChild) {
+        LQueue T;
+        CopyQueue_LQ(T, ori);
+        int oriLength = length;
+
+        int newLength = oriLength;
+        DFSCount(tree->firstChild, locs, n, T, newLength);
+        if (newLength > length) {
+            Q = T;
+            length = newLength;
+        }
+        // 已经找到一条路径，剪枝
+        if (length == n) {
+            return;
+        }
+
+        for (CSTree p = tree->firstChild->nextSibling; p; p = p->nextSibling) {
+            CopyQueue_LQ(T, ori);
+            newLength = oriLength;
+            DFSCount(p, locs, n, T, newLength);
+            if (newLength > length) {
+                Q = T;
+                length = newLength;
+            }
+            // 已经找到一条路径，剪枝
+            if (length == n) {
+                return;
+            }
+        }
+    }
+}
+
+// 根据全图生成top序列
+// 根据top序列检查是否存在简单路径
+// 参数Q用于以队列形式存放这条尝试的简单路径
+// 如果存在，则返回TRUE，否则返回FALSE
+// Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
+    // 无向图转为有向图
+    // UDN_to_DN(G);    
+    // 全图G进行top排序
     // TopSq TS;
-    // InitTopSq(TS, subG.n);
-    // int result = ToplogicalSort(subG, TS);
+    // InitTopSq(TS, G.n);
+    // int result = ToplogicalSort(G, TS);
     // printf("%d\n", result);
     // for (int i = 0; i < TS.n; ++i) {
     //     printf("%d->", TS.sq[i]);
     // }
     // printf("\n");
+    // 根据传入的locs数组，构造子top序列
+    // TopSq subTS;
+    // subTS.sq = (int*)malloc(sizeof(int) * n);
+    // subTS.n = 0;
+    // for (int i = 0; i < G.n; ++i) {
+    //     if (-1 != SearchInArray(locs, TS.sq[i], n)) {
+    //         subTS.sq[subTS.n] = TS.sq[i];
+    //         subTS.n++;
+    //     }
+    // }
+    // printf("%d\n", result);
+    // for (int i = 0; i < subTS.n; ++i) {
+    //     printf("%d->", subTS.sq[i]);
+    // }
+    // printf("\n");
+    // 检查子top序列subTS中，是否每个相邻顶点都有路径
+    // 如果不是，则不存在目标路径；如果是，则返回一条路径
+    // InitQueue_LQ(Q);
+    // int* flags = (int*)malloc(sizeof(int) * G.n);
+    // memset(flags, 0, sizeof(int) * G.n);
+    // for (int i = 0;i < n - 1; ++i) {
+    //     DistInfo* dist = (DistInfo*)malloc(sizeof(DistInfo) * G.n);
+    //     Dijkstra(G, locs[i], dist);
+    //     // for (int i = 0; i < G.n; ++i) {
+    //     //     printf("%d ", dist[i].lowcost);
+    //     // }
+    //     // printf("\n");
+    //     if (dist[locs[i + 1]].lowcost == INT_MAX) {
+    //         return FALSE;
+    //     }
+    //     else {
+    //         if (FALSE == PathToQueue(G, dist, locs[i + 1], Q, flags)) {
+    //             return FALSE;
+    //         }
+    //     }
+    // }
+    // return TRUE;
+Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
+    // 
+    int bg = locs[0], ed = locs[n - 1];
+    CSTree tree = SearchPathBFS(G, bg, ed);
+    PrintCSTree(tree);
+    printf("\n");
+
+    InitQueue_LQ(Q);
+    int length = 0;
+    DFSCount(tree, locs, n, Q, length);
+    if (length == n) {
+        return TRUE;
+    }
+    return FALSE;
 }
