@@ -414,6 +414,7 @@ void OutputPath(UDN G, DistInfo* Dist, int k) {
     }
 }
 
+// 打印图G中的所有顶点，包括id、名称、信息
 void OutputVexs(UDN G) {
     VexNode* vexs = G.vexs;
     printf("---\t---\t---\t\n");
@@ -437,6 +438,7 @@ void OutputVexs(UDN G) {
     printf("---\t---\t---\t\n");
 }
 
+// 打印图G中的所有弧，包括出度顶点、权重、入度顶点
 void OutputAllArcs(UDN G) {
     VexNode* nodes = G.vexs;
     printf("起点ID---\t---(权重)---\t---终点ID\t\n");
@@ -449,6 +451,7 @@ void OutputAllArcs(UDN G) {
     }
 }
 
+// 深度遍历并打印图G中起点为prev、终点为target的路径
 Status PrintSearchPathDFS(UDN G, int prev, int target) {
     if (target == prev) {
         return OK;
@@ -463,6 +466,10 @@ Status PrintSearchPathDFS(UDN G, int prev, int target) {
     }
 }
 
+// 遍历并查找指定起点和终点的所有简单路径，并以CSTree树类型返回查找结果
+// G：图
+// bg：起点在G.vexs顶点数组中的下标
+// bg：终点在G.vexs顶点数组中的下标
 CSTree SearchPathBFS(UDN G, int bg, int end) {
     CSTree root = (CSTree)malloc(sizeof(CSTree));
     if (NULL == root) {
@@ -493,17 +500,6 @@ CSTree SearchPathBFS(UDN G, int bg, int end) {
     return root;
 }
 
-typedef struct {
-    int* sq;
-    int n;
-} TopSq;
-
-// 初始化拓扑排序辅助类型TopSq
-void InitTopSq(TopSq& TS, int n) {
-    TS.sq = (int*)malloc(sizeof(int) * n);
-    TS.n = 0;
-}
-
 // 无向图 -> 有向图
 void UDN_to_DN (UDN& G) {
     for (int i = 0; i < G.n; ++i) {
@@ -529,13 +525,6 @@ void UDN_to_DN (UDN& G) {
 }
 
 // 求最小生成树：Kruscal算法
-// typedef struct {
-//     int v, w;
-//     int key;
-// } KruscalRcdType;
-
-// typedef KruscalRcdType RcdType
-
 // 构造G的最小生成树T
 Status Kruscal(UDN G, UDN& T) {
     // 初始化T
@@ -578,6 +567,20 @@ Status Kruscal(UDN G, UDN& T) {
         }
     }
 
+}
+
+// TopSq: top序列，top排序算法辅助结构
+// sq：存放顶点在G.vexs中的下标
+// n：top序列长度
+typedef struct {
+    int* sq;
+    int n;
+} TopSq;
+
+// 初始化拓扑排序辅助类型TopSq
+void InitTopSq(TopSq& TS, int n) {
+    TS.sq = (int*)malloc(sizeof(int) * n);
+    TS.n = 0;
 }
 
 // 拓扑排序
@@ -654,6 +657,7 @@ void GenerateSubGraph(UDN G, int* locs, int n, UDN& T) {
     }
 }
 
+// 将Dijkstra算法获得的Dist数组中的最短路径信息转为Q
 Status PathToQueue(UDN& G, DistInfo* Dist, int k, LQueue& Q, int* flags) {
     if (k < 0) {
         return TRUE;
@@ -667,6 +671,7 @@ Status PathToQueue(UDN& G, DistInfo* Dist, int k, LQueue& Q, int* flags) {
     return TRUE;
 }
 
+// 深度优先遍历并打印连通图G，i为遍历起点顶点在G.vexs中的下标
 void DFSprint(UDN& G, int i) {
     if (i < 0 || i >= G.n) {
         return;
@@ -690,7 +695,7 @@ void DFSprint(UDN& G, int i) {
     }
 }
 
-// 深度优先遍历
+// 深度优先遍历并打印图G
 void DFS(UDN& G) {
     memset(G.tags, sizeof(int) * G.n, 0);
     for (int i = 0;i < G.n; ++i) {
@@ -700,23 +705,35 @@ void DFS(UDN& G) {
     }
 }
 
+// 根据tree表示的多条路径，递归选出一条经过locs指定的所有顶点的路径，并将其存放到Q
+// tree：两个顶点之间的多条路径
+// locs：多个顶点在G.vexs中的下标
+// Q：用于存放目标路径上的顶点在G.vexs中的下标
+// length：目前locs中已经被选中的顶点的个数
 void DFSCount(CSTree tree, int* locs, int n, LQueue& Q, int& length) {
     if (NULL == tree || length == n) {
         return;
     }
+    // 当前顶点入队
     EnQueue_LQ(Q, tree->data);
+    // 如果当前顶点在locs中，length++
     if (SearchInArray(locs, tree->data, n) != -1) {
         length++;
     }
+    // 复制当前路径到ori
     LQueue ori;
     CopyQueue_LQ(ori, Q);
+    // 遍历孩子
     if (tree->firstChild) {
         LQueue T;
+        // 第一个孩子
+        // 复制当前路径到T，并记录当前长度
         CopyQueue_LQ(T, ori);
         int oriLength = length;
-
         int newLength = oriLength;
         DFSCount(tree->firstChild, locs, n, T, newLength);
+        // 比较 (沿着第一个孩子走下去的路径 经过的locs顶点个数) 和 (当前经过的locs顶点个数)
+        // 并由此决定是否延长路径 
         if (newLength > length) {
             Q = T;
             length = newLength;
@@ -725,10 +742,13 @@ void DFSCount(CSTree tree, int* locs, int n, LQueue& Q, int& length) {
         if (length == n) {
             return;
         }
-
+        // 第二、第三……个孩子
         for (CSTree p = tree->firstChild->nextSibling; p; p = p->nextSibling) {
+            // 复制当前路径到T，并记录当前长度
             CopyQueue_LQ(T, ori);
             newLength = oriLength;
+            // 比较 (沿着这个孩子走下去的路径 经过的locs顶点个数) 和 (当前经过的locs顶点个数)
+            // 并由此决定是否延长路径
             DFSCount(p, locs, n, T, newLength);
             if (newLength > length) {
                 Q = T;
@@ -742,61 +762,13 @@ void DFSCount(CSTree tree, int* locs, int n, LQueue& Q, int& length) {
     }
 }
 
-// 根据全图生成top序列
-// 根据top序列检查是否存在简单路径
-// 参数Q用于以队列形式存放这条尝试的简单路径
-// 如果存在，则返回TRUE，否则返回FALSE
-// Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
-    // 无向图转为有向图
-    // UDN_to_DN(G);    
-    // 全图G进行top排序
-    // TopSq TS;
-    // InitTopSq(TS, G.n);
-    // int result = ToplogicalSort(G, TS);
-    // printf("%d\n", result);
-    // for (int i = 0; i < TS.n; ++i) {
-    //     printf("%d->", TS.sq[i]);
-    // }
-    // printf("\n");
-    // 根据传入的locs数组，构造子top序列
-    // TopSq subTS;
-    // subTS.sq = (int*)malloc(sizeof(int) * n);
-    // subTS.n = 0;
-    // for (int i = 0; i < G.n; ++i) {
-    //     if (-1 != SearchInArray(locs, TS.sq[i], n)) {
-    //         subTS.sq[subTS.n] = TS.sq[i];
-    //         subTS.n++;
-    //     }
-    // }
-    // printf("%d\n", result);
-    // for (int i = 0; i < subTS.n; ++i) {
-    //     printf("%d->", subTS.sq[i]);
-    // }
-    // printf("\n");
-    // 检查子top序列subTS中，是否每个相邻顶点都有路径
-    // 如果不是，则不存在目标路径；如果是，则返回一条路径
-    // InitQueue_LQ(Q);
-    // int* flags = (int*)malloc(sizeof(int) * G.n);
-    // memset(flags, 0, sizeof(int) * G.n);
-    // for (int i = 0;i < n - 1; ++i) {
-    //     DistInfo* dist = (DistInfo*)malloc(sizeof(DistInfo) * G.n);
-    //     Dijkstra(G, locs[i], dist);
-    //     // for (int i = 0; i < G.n; ++i) {
-    //     //     printf("%d ", dist[i].lowcost);
-    //     // }
-    //     // printf("\n");
-    //     if (dist[locs[i + 1]].lowcost == INT_MAX) {
-    //         return FALSE;
-    //     }
-    //     else {
-    //         if (FALSE == PathToQueue(G, dist, locs[i + 1], Q, flags)) {
-    //             return FALSE;
-    //         }
-    //     }
-    // }
-    // return TRUE;
+// 规划一条经过多个顶点的简单路径，其中起点和终点是指定的
+// 若能找到该简单路径，则返回TRUE，否则返回FALSE
+// G：图
+// locs：需要经过的顶点在G.vexs数组中的下标，其中locs[0]是起点，locs[n-1]表示终点
+// n：locs数组的大小
+// Q：用于返回目标简单路径
 Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
-    // 
     int bg = locs[0], ed = locs[n - 1];
     CSTree tree = SearchPathBFS(G, bg, ed);
     PrintCSTree(tree);

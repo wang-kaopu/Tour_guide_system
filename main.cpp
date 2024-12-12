@@ -57,18 +57,17 @@ int main() {
     }
     printf("\n");
 
-    DeleteVex(G, 2);
+    // DeleteVex(G, 2);
 
-    nodes = G.vexs;
-    for (int i = 0; i < G.n; ++i) {
-        printf("%d:", nodes[i].id - 1);
-        for (AdjVexNode* p = nodes[i].firstArc; p; p = p->next) {
-            printf("%d(%d) ", p->adjvex, p->weight);
-        }
-        printf("\n");
-    }
-    printf("\n");
-
+    // nodes = G.vexs;
+    // for (int i = 0; i < G.n; ++i) {
+    //     printf("%d:", nodes[i].id - 1);
+    //     for (AdjVexNode* p = nodes[i].firstArc; p; p = p->next) {
+    //         printf("%d(%d) ", p->adjvex, p->weight);
+    //     }
+    //     printf("\n");
+    // }
+    // printf("\n");
 
     // CSTree ret = SearchPathBFS(G, 1, 1);
     // PrintCSTree(ret);
@@ -109,15 +108,15 @@ int main() {
 
     // ToplogicalSort(G);
 
-    // int locs[] = {0, 1, 3};
-    // LQueue Q;
-    // PathPlanning(G, locs, 3, Q);
+    int locs[] = {0, 1, 3};
+    LQueue Q;
+    PathPlanning(G, locs, 3, Q);
         // QueuePtr p = Q.front;
         // while (p->next) {
         //     printf("%d->",p->data);
         //     p = p->next;
         // }
-    // PrintQueue_LQ(Q);
+    PrintQueue_LQ(Q);
 
 
     return 0;
