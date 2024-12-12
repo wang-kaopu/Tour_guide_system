@@ -247,6 +247,8 @@ Status ModifyVex(UDN &G, VexType id, char* name, char* vexInfo) {
     return ERROR;
 }
 
+// 根据给定的顶点id（v_id和w_id），查找并删除这两个顶点之间的边
+// 若查找并删除成功，则返回p弧结点，否则返回NULL
 AdjVexNode* SearchArc(UDN& G, VexType v_id, VexType w_id) {
     int v_loc = LocateVex(G, v_id), w_loc = LocateVex(G, w_id);
     for (AdjVexNode* p = G.vexs[v_loc].firstArc; p; p = p->next) {
@@ -257,6 +259,8 @@ AdjVexNode* SearchArc(UDN& G, VexType v_id, VexType w_id) {
     return NULL;
 }
 
+// 根据给定的arcInfo弧信息，在图G中查找并修改目标边的权值
+// 若查找并修改成功，则返回OK，否则返回ERROR
 Status ModifyArcWeight(UDN &G, ArcInfo& arcInfo) {
     VexType v_id = arcInfo.v_id, w_id = arcInfo.w_id;
     AdjVexNode* arcNode1 = SearchArc(G, v_id, w_id);
@@ -268,6 +272,8 @@ Status ModifyArcWeight(UDN &G, ArcInfo& arcInfo) {
     return OK;
 }
 
+// 根据给定的arcInfo弧信息，在图G中查找并删除目标边
+// 若查找并删除成功，则返回OK，否则返回ERROR
 Status DeleteArc(UDN &G, ArcInfo arc) {
     int v_loc = LocateVex(G, arc.v_id);
     int w_loc = LocateVex(G, arc.w_id);
@@ -283,7 +289,7 @@ Status DeleteArc(UDN &G, ArcInfo arc) {
             target = NULL;
         }
         else {
-            for (AdjVexNode* p = G.vexs[v_loc].firstArc; p->next; p = p->next) {
+            for (AdjVexNode* p = G.vexs[v_loc].firstArc; p && p->next; p = p->next) {
                 if (p->next->adjvex == w_loc) {
                     AdjVexNode* target = p->next;
                     p->next = target->next;
@@ -298,6 +304,8 @@ Status DeleteArc(UDN &G, ArcInfo arc) {
     return OK;
 }
 
+// 根据给定的顶点在G.vexs数组中的下标位置i，在图G中删除该顶点的所有出度弧
+// 注意：该函数可能将破坏无向图的无向性，仅供内部使用，不对外开放
 void ClearAdj(UDN& G, int i) {
     VexNode& vex = G.vexs[i];
     AdjVexNode* p = vex.firstArc, *q = (p ? p->next : NULL);
@@ -310,10 +318,19 @@ void ClearAdj(UDN& G, int i) {
     }
 }
 
+// 删除图G中顶点id为id的点
 Status DeleteVex(UDN &G, VexType id) {
     int i = LocateVex(G, id);
     if (i == -1) {
         return ERROR;
+    }
+    for (int i = 0; i < G.n; ++i) {
+        AdjVexNode* p = SearchArc(G, id, G.vexs[i].id);
+        if (p) {
+            int weight = p->weight;
+            ArcInfo arcInfo = { id, G.vexs[i].id, weight };
+            DeleteArc(G, arcInfo);
+        }
     }
     ClearAdj(G, i);
     G.vexs = (VexNode*)deleteFromArray(G.vexs, G.n, i, sizeof(VexNode));
