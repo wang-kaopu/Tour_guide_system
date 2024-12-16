@@ -9,7 +9,8 @@
         "unordered_map": "cpp",
         "initializer_list": "cpp",
         "utility": "cpp",
-        "main.h": "cpp"
+        "main.h": "cpp",
+        "typeinfo": "cpp"
     },
     "cSpell.words": [
         "adjvex",

@@ -38,3 +38,10 @@ int SearchInArray(int* arr, int target, int n) {
     }
     return -1;
 }
+
+void ClearBuffer() {
+    char c;
+    while ((c = getchar()) != '\n' && c != EOF) {
+        ;
+    }
+}

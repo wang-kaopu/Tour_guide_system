@@ -9,8 +9,6 @@
 #include "tool.h"
 #include "tree.h"
 #include "queue.h"
-#include "heap.h"
-#include "union_find_sets.h"
 
 #define OK 1
 #define ERROR 0
@@ -19,7 +17,6 @@
 
 #define UNVISITED 0
 #define VISITED 1
-// #define INFINITY INT_MAX
 
 typedef int Status;
 typedef int VexType;
@@ -63,13 +60,6 @@ typedef struct {
 	int* tags; // 标志数组，可用于在图的遍历中标记顶点访问与否
 } UDN;
 
-typedef struct {
-	VexNode* vexs; // 顶点数组。vertex, 顶点
-	int n, e; // n: 顶点数; e: 边数（弧数）
-	int* tags; // 标志数组，可用于在图的遍历中标记顶点访问与否
-} DN;
-
-// *
 // 通过id找到顶点v在顶点数组vexs中的位置，查找成功则返回位置下标，否则返回-1
 // G: 图
 // v_id：目标顶点id
@@ -82,7 +72,6 @@ int LocateVex (UDN& G, VexType v_id) {
     return -1;
 }
 
-// *
 // 初始化图，只有顶点，没有弧
 // G：图
 // vexs：顶点数组
@@ -101,7 +90,6 @@ Status InitUDN(UDN &G, VexType *vexs, int n) {
     return OK;
 }
 
-// *
 // 在图G中添加指定名称和信息的顶点，id被分配成功则返回该顶点id，否则返回-1
 // G：图
 // name：顶点名称
@@ -113,26 +101,38 @@ int AddVex(UDN &G, char* name, char* vexInfo) {
     }
     int id = G.n == 0 ? 1 : G.vexs[G.n - 1].id + 1;
     node->id = id;
-    node->name = name;
-    node->vexInfo = vexInfo;
+    node->name = (char*)malloc(sizeof(char) * 50);
+    node->vexInfo = (char*)malloc(sizeof(char) * 150);
+    memset(node->name, '\0', 50);
+    memset(node->vexInfo, '\0', 150);
+    memcpy(node->name, name, 50);
+    memcpy(node->vexInfo, vexInfo, 150);
     node->firstArc = NULL;
 
-    VexNode* vexNodes = NULL;
-    if (G.n == 0) {
-        vexNodes = (VexNode*)malloc(sizeof(VexNode) * (G.n + 1));
-    }
-    else {
-        vexNodes = (VexNode*)realloc(G.vexs, sizeof(VexNode) * (G.n + 1));
-    }
+    VexNode* vexNodes = (VexNode*)realloc(G.vexs, sizeof(VexNode) * (G.n + 1));
     if (NULL == vexNodes) {
         return -1;
     }
     G.vexs = vexNodes;
     G.vexs[G.n] = *node;
+    free(node);
+    node = NULL;
 
     G.n++;
     G.tags[G.n - 1] = 0;
     return OK;
+}
+
+// 根据给定的顶点id（v_id和w_id），查找这两个顶点之间的边
+// 若查找成功，则返回p弧结点，否则返回NULL
+AdjVexNode* SearchArc(UDN& G, VexType v_id, VexType w_id) {
+    int v_loc = LocateVex(G, v_id), w_loc = LocateVex(G, w_id);
+    for (AdjVexNode* p = G.vexs[v_loc].firstArc; p; p = p->next) {
+        if (p->adjvex == w_loc) {
+            return p;
+        }
+    }
+    return NULL;
 }
 
 // *
@@ -154,6 +154,10 @@ Status CreateUDN(UDN &G, VexType *vexs, char** name, int n, ArcInfo *arcs, int e
         G.vexs[i] = {vexs[i], name == NULL ? NULL : name[i], NULL};
     }
     for (int i = 0; i < e; i++) {
+        AdjVexNode* p = SearchArc(G, arcs[i].v_id, arcs[i].w_id);
+        if (p && p->weight == arcs[i].weight) {
+            return OK;
+        }
         int v_loc = LocateVex(G, arcs[i].v_id), w_loc = LocateVex(G, arcs[i].w_id);
         if (v_loc < 0 || w_loc < 0) {
             return ERROR;
@@ -173,14 +177,17 @@ Status CreateUDN(UDN &G, VexType *vexs, char** name, int n, ArcInfo *arcs, int e
     return OK;
 }
 
-// *
-// 在图G中添加从顶点v到顶点w的弧、从顶点w到顶点v的弧
+// 在图G中添加从顶点v到顶点w的弧、从顶点w到顶点v的弧，不重复
 // G：图
 // v_id：出度顶点
 // w_id：入度顶点
 // weight：权
 Status SetArc(UDN &G, VexType v_id, VexType w_id, int weight) 
 {  
+    AdjVexNode* p = SearchArc(G, v_id, w_id);
+    if (p && p->weight == weight) {
+        return OK;
+    }
     int v_loc = LocateVex(G, v_id);
     int w_loc = LocateVex(G, w_id);
     if (v_loc < 0 || w_loc < 0) {
@@ -202,35 +209,6 @@ Status SetArc(UDN &G, VexType v_id, VexType w_id, int weight)
     return OK;
 }
 
-// 在图G中添加从顶点v到顶点w的弧
-// G：图
-// v_id：出度顶点
-// w_id：入度顶点
-// weight：权
-Status SetDirectedArc(UDN &G, VexType v_id, VexType w_id, int weight) 
-{  
-    int v_loc = LocateVex(G, v_id);
-    int w_loc = LocateVex(G, w_id);
-    if (v_loc < 0 || w_loc < 0) {
-        return ERROR;
-    }
-    AdjVexNode* node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
-    node->next = G.vexs[v_loc].firstArc;
-    node->adjvex = w_loc;
-    node->weight = weight;
-    G.vexs[v_loc].firstArc = node;
-
-    // node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
-    // node->next = G.vexs[w_loc].firstArc;
-    // node->adjvex = v_loc;
-    // node->weight = weight;
-    // G.vexs[w_loc].firstArc = node;
-
-    G.e++;
-    return OK;
-}
-
-
 // 修改指定id的顶点名称和顶点信息
 // G：图
 // id：顶点id
@@ -239,24 +217,22 @@ Status SetDirectedArc(UDN &G, VexType v_id, VexType w_id, int weight)
 Status ModifyVex(UDN &G, VexType id, char* name, char* vexInfo) {
     for (int i = 0; i < G.n; ++i) {
         if (G.vexs[i].id == id) {
-            G.vexs[i].name = name;
-            G.vexs[i].vexInfo = vexInfo;
+            if (NULL == G.vexs[i].name) {
+                G.vexs[i].name = (char*)malloc(sizeof(char) * 50);
+            }
+            memset(G.vexs[i].name, '\0', 50);
+            memcpy(G.vexs[i].name, name, 50);
+            if (NULL == G.vexs[i].vexInfo) {
+                G.vexs[i].vexInfo = (char*)malloc(sizeof(char) * 150);
+            }
+            memset(G.vexs[i].vexInfo, '\0', 150);
+            memcpy(G.vexs[i].vexInfo, vexInfo, 150);
+            // G.vexs[i].name = name;
+            // G.vexs[i].vexInfo = vexInfo;
             return OK;
         }
     }
     return ERROR;
-}
-
-// 根据给定的顶点id（v_id和w_id），查找并删除这两个顶点之间的边
-// 若查找并删除成功，则返回p弧结点，否则返回NULL
-AdjVexNode* SearchArc(UDN& G, VexType v_id, VexType w_id) {
-    int v_loc = LocateVex(G, v_id), w_loc = LocateVex(G, w_id);
-    for (AdjVexNode* p = G.vexs[v_loc].firstArc; p; p = p->next) {
-        if (p->adjvex == w_loc) {
-            return p;
-        }
-    }
-    return NULL;
 }
 
 // 根据给定的arcInfo弧信息，在图G中查找并修改目标边的权值
@@ -280,28 +256,34 @@ Status DeleteArc(UDN &G, ArcInfo arc) {
     if (v_loc < 0 || w_loc < 0) {
         return ERROR;
     }
+    int count = 0;
     for (int i = 0;i < 2; ++i) {
-        if (G.vexs[v_loc].firstArc->adjvex == w_loc) {
+        if (G.vexs[v_loc].firstArc->adjvex == w_loc && G.vexs[v_loc].firstArc->weight == arc.weight) {
             AdjVexNode* target = G.vexs[v_loc].firstArc;
             G.vexs[v_loc].firstArc = target->next;
-            G.e--;
             free(target);
             target = NULL;
+            count++;
         }
         else {
             for (AdjVexNode* p = G.vexs[v_loc].firstArc; p && p->next; p = p->next) {
-                if (p->next->adjvex == w_loc) {
+                if (p->next->adjvex == w_loc && p->next->weight == arc.weight) {
                     AdjVexNode* target = p->next;
                     p->next = target->next;
-                    G.e--;
                     free(target);
                     target = NULL;
+                    count++;
                 }
             }
         }
         swapInt(v_loc, w_loc);
     }
-    return OK;
+    if (count == 2) {
+        G.e--;
+        return OK;
+    } else {
+        return ERROR;
+    }
 }
 
 // 根据给定的顶点在G.vexs数组中的下标位置i，在图G中删除该顶点的所有出度弧
@@ -316,12 +298,13 @@ void ClearAdj(UDN& G, int i) {
             q = q->next;
         }
     }
+    vex.firstArc = NULL;
 }
 
 // 删除图G中顶点id为id的点
 Status DeleteVex(UDN &G, VexType id) {
-    int i = LocateVex(G, id);
-    if (i == -1) {
+    int loc = LocateVex(G, id);
+    if (loc == -1) {
         return ERROR;
     }
     for (int i = 0; i < G.n; ++i) {
@@ -332,21 +315,21 @@ Status DeleteVex(UDN &G, VexType id) {
             DeleteArc(G, arcInfo);
         }
     }
-    ClearAdj(G, i);
-    G.vexs = (VexNode*)deleteFromArray(G.vexs, G.n, i, sizeof(VexNode));
+    ClearAdj(G, loc);
+    G.vexs = (VexNode*)deleteFromArray(G.vexs, G.n, loc, sizeof(VexNode));
+    
     G.n--;
+    for (int i = 0; i < G.n; ++i) {
+        AdjVexNode* p = G.vexs[i].firstArc;
+        while (p) {
+            if (p->adjvex >= loc) {
+                p->adjvex--;
+            }
+            p = p->next;
+        }
+    }
     return OK;
 }
-
-// 搜索顶点
-// VexNode* SearchVex(UDN G, VexType id) {
-//     for (int i = 0; i < G.n; ++i) {
-//         if (G.vexs[i].id == id) {
-//             return &(G.vexs[i]);
-//         }
-//     }
-//     return NULL;
-// }
 
 // 迪杰斯特拉算法：寻找最短路径
 // 求图G中从i顶点到其他所有顶点的最短路径，并由Dist返回
@@ -407,10 +390,10 @@ void OutputPath(UDN G, DistInfo* Dist, int k) {
     }
     OutputPath(G, Dist, Dist[k].prev);
     if (Dist[k].prev != -1) {
-        printf("---(%d)--->%d", Dist[k].single_dist, G.vexs[k].id);
+        printf("---(%d)--->%d.%s", Dist[k].single_dist, G.vexs[k].id, G.vexs[k].name);
     }
     else {
-        printf("%d", G.vexs[k].id);
+        printf("%d.%s", G.vexs[k].id, G.vexs[k].name);
     }
 }
 
@@ -418,12 +401,12 @@ void OutputPath(UDN G, DistInfo* Dist, int k) {
 void OutputVexs(UDN G) {
     VexNode* vexs = G.vexs;
     printf("---\t---\t---\t\n");
-    printf("ID\t名称\t信息\t\n");
+    printf("ID\t名称:信息\t\n");
     for (int i = 0 ;i < G.n; ++i) {
         VexNode node = vexs[i];
         printf("%d\t", node.id);
         if (node.name != NULL) {
-            printf("%s\t", node.name);
+            printf("%s:", node.name);
         }
         else {
             printf("(暂无)\t");
@@ -500,163 +483,6 @@ CSTree SearchPathBFS(UDN G, int bg, int end) {
     return root;
 }
 
-// 无向图 -> 有向图
-void UDN_to_DN (UDN& G) {
-    for (int i = 0; i < G.n; ++i) {
-        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
-            int j = p->adjvex;
-            AdjVexNode* q = G.vexs[j].firstArc;
-            AdjVexNode* tmp = NULL;
-            if (q && q->adjvex == i) {
-                tmp = q;
-                G.vexs[j].firstArc = q->next;
-            }
-            else {
-                for (; q && q->next; q = q->next) {
-                    if (q->next->adjvex == i) {
-                        tmp = q->next;
-                        q->next = q->next->next;
-                    }
-                }
-            }
-            free(tmp);
-        }
-    }
-}
-
-// 求最小生成树：Kruscal算法
-// 构造G的最小生成树T
-Status Kruscal(UDN G, UDN& T) {
-    // 初始化T
-    T.n = G.n;
-    T.e = 0;
-    T.vexs = (VexNode*)malloc(sizeof(VexNode) * T.n);
-    memmove(T.vexs, G.vexs, sizeof(VexNode) * T.n);
-    for (int i = 0; i < T.n; ++i) {
-        T.vexs[i].firstArc  = NULL;
-    }
-    // 初始化并查集
-    MFSet S;
-    InitMFSet(S, T.n);
-    // 准备辅助数组arcs
-    KruscalRcdType* arcs = (KruscalRcdType*)malloc((G.e + 1) * sizeof(KruscalRcdType));
-    int j = 1;
-    // 开始计算
-    Heap H;
-    for (int i = 0; i < T.n; ++i) {
-        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
-            if (i < p->adjvex) {
-                arcs[j].v = i;
-                arcs[j].w = p->adjvex;
-                arcs[j].key = p->weight;
-                ++j;
-            }
-        }
-        MakeHeap(H, arcs, G.e, G.e + 1, 0, lessPrior);
-        for (int i = 0; i < G.e; ++i) {
-            RcdType tmp;
-            RemoveFirstHeap(H, tmp);
-            int v_id = G.vexs[tmp.v].id;
-            int w_id = G.vexs[tmp.w].id;
-            if (UnionMFSet(S, tmp.v, tmp.w)) {
-                SetArc(T, v_id, w_id, tmp.key);
-                if (T.e == G.n - 1) {
-                    break;
-                }
-            }
-        }
-    }
-
-}
-
-// TopSq: top序列，top排序算法辅助结构
-// sq：存放顶点在G.vexs中的下标
-// n：top序列长度
-typedef struct {
-    int* sq;
-    int n;
-} TopSq;
-
-// 初始化拓扑排序辅助类型TopSq
-void InitTopSq(TopSq& TS, int n) {
-    TS.sq = (int*)malloc(sizeof(int) * n);
-    TS.n = 0;
-}
-
-// 拓扑排序
-Status ToplogicalSort(UDN G, TopSq& TS) {
-    // 将有向图转化为无向图
-    UDN_to_DN(G);
-    // 辅助数组indegree，记录顶点入度
-    int* indegree = (int*)malloc(sizeof(int) * G.n);
-    memset(indegree, 0, sizeof(int) * G.n);
-    // 辅助队列Q
-    LQueue Q;
-    InitQueue_LQ(Q);
-    // 初始化辅助结构TopSq拓扑序列
-    InitTopSq(TS, G.n);
-    // 计算所有顶点的入度，存入indegree
-    for (int i = 0; i < G.n; ++i) {
-        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
-            ++indegree[p->adjvex];
-        }
-    }
-    // 搜寻所有入度为0的顶点，入队
-    for (int i = 0; i < G.n; ++i) {
-        if (0 == indegree[i]) {
-            EnQueue_LQ(Q, i);
-        }
-    }
-    // 反复出队、加入拓扑序列、删除所有其出度的弧、搜寻、入队……
-    int i = -1, count = 0;
-    while (OK == DeQueue_LQ(Q, i)) {
-        TS.sq[TS.n++] = i;
-        ++count;
-        for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
-            if (0 == --indegree[p->adjvex]) {
-                EnQueue_LQ(Q, p->adjvex);
-            }
-        }
-    }
-    // 释放辅助数组indegree空间
-    free(indegree);
-    // 判断是否成功生成拓扑序列
-    if (count < G.n) {
-        return ERROR;
-    }
-    return OK;
-}
-
-// 根据给定的顶点位置数组locs和顶点个数n，生成子图
-void GenerateSubGraph(UDN G, int* locs, int n, UDN& T) {
-    // 建立数组（哈希表），映射：locs数组的下标->(locs数组的元素->)G.vexs[locs].id
-    int ids[n] = {0};
-    for (int i = 0; i < n; ++i) {
-        ids[i] = G.vexs[locs[i]].id;
-    }
-    // 初始化T
-    T.vexs = (VexNode*)malloc(sizeof(VexNode) * n);
-    T.e = 0;
-    T.n = n;
-    T.tags = (int*)malloc(sizeof(int) * n);
-    memset(T.tags, 0, sizeof(int) * n);
-    for (int i = 0; i < n; ++i) {
-        int loc = locs[i];
-        T.vexs[i].id = G.vexs[loc].id;
-        T.vexs[i].name = G.vexs[loc].name;
-        T.vexs[i].vexInfo = G.vexs[loc].vexInfo;
-        T.vexs[i].firstArc = NULL;
-    }
-    for (int i = 0; i < n; ++i) {
-        int loc = locs[i];
-        for (AdjVexNode* p = G.vexs[loc].firstArc; p; p = p->next) {
-            if (loc < p->adjvex && -1 != SearchInArray(locs, p->adjvex, n)) {
-                SetDirectedArc(T, G.vexs[loc].id, G.vexs[p->adjvex].id, p->weight);
-            }
-        }
-    }
-}
-
 // 将Dijkstra算法获得的Dist数组中的最短路径信息转为Q
 Status PathToQueue(UDN& G, DistInfo* Dist, int k, LQueue& Q, int* flags) {
     if (k < 0) {
@@ -669,40 +495,6 @@ Status PathToQueue(UDN& G, DistInfo* Dist, int k, LQueue& Q, int* flags) {
     PathToQueue(G, Dist, Dist[k].prev, Q, flags);
     EnQueue_LQ(Q, k);
     return TRUE;
-}
-
-// 深度优先遍历并打印连通图G，i为遍历起点顶点在G.vexs中的下标
-void DFSprint(UDN& G, int i) {
-    if (i < 0 || i >= G.n) {
-        return;
-    }
-    printf("%d\t", G.vexs[i].id);
-    if (G.vexs[i].name == NULL) {
-        printf("（空）\t");
-    }
-    else {
-        printf("%s\t", G.vexs[i].name);
-    }
-    if (G.vexs[i].vexInfo == NULL) {
-        printf("（空）\t\n");
-    }
-    else {
-        printf("%s\t\n", G.vexs[i].vexInfo);
-    }
-    G.tags[i] = 1;
-    if (NULL != G.vexs[i].firstArc && G.tags[G.vexs[i].firstArc->adjvex] == 0) {
-        DFSprint(G, G.vexs[i].firstArc->adjvex);
-    }
-}
-
-// 深度优先遍历并打印图G
-void DFS(UDN& G) {
-    memset(G.tags, sizeof(int) * G.n, 0);
-    for (int i = 0;i < G.n; ++i) {
-        if (G.tags[i] == 0) {
-            DFSprint(G, i);
-        }
-    }
 }
 
 // 根据tree表示的多条路径，递归选出一条经过locs指定的所有顶点的路径，并将其存放到Q
@@ -760,6 +552,7 @@ void DFSCount(CSTree tree, int* locs, int n, LQueue& Q, int& length) {
             }
         }
     }
+    DestroyQueue_LQ(ori);
 }
 
 // 规划一条经过多个顶点的简单路径，其中起点和终点是指定的
@@ -771,9 +564,6 @@ void DFSCount(CSTree tree, int* locs, int n, LQueue& Q, int& length) {
 Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
     int bg = locs[0], ed = locs[n - 1];
     CSTree tree = SearchPathBFS(G, bg, ed);
-    PrintCSTree(tree);
-    printf("\n");
-
     InitQueue_LQ(Q);
     int length = 0;
     DFSCount(tree, locs, n, Q, length);
@@ -782,3 +572,293 @@ Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
     }
     return FALSE;
 }
+
+// 打印图G
+void PrintGraph(UDN G) {
+    VexNode* nodes = G.vexs;
+    for (int i = 0; i < G.n; ++i) {
+        printf("%d:", nodes[i].id - 1);
+        for (AdjVexNode* p = nodes[i].firstArc; p; p = p->next) {
+            printf("%d(%d) ", p->adjvex, p->weight);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+// 打印图G中的单个顶点，该顶点在G.vexs数组中的下标为loc
+void PrintSingleVex(UDN G, int loc) {
+    if (loc < 0 || loc >= G.n) {
+        return;
+    }
+    VexNode node =  G.vexs[loc];
+    printf("%d\t", node.id);
+    if (node.name != NULL) {
+        printf("%s:", node.name);
+    }
+    else {
+        printf("(暂无)\t");
+    }
+    if (node.vexInfo != NULL) {
+        printf("%s\t\n", node.vexInfo);
+    }
+    else {
+        printf("(暂无)\t\n");
+    }
+}
+
+// 在图G中修改边arcInfo的权重为newWeight
+Status ModifyArc(UDN& G, ArcInfo arcInfo, int newWeight) {
+    int v_id = arcInfo.v_id;
+    int w_id = arcInfo.w_id;
+    int weight = arcInfo.weight;
+    int v_loc = LocateVex(G, v_id);
+    int w_loc = LocateVex(G, w_id);
+    for (AdjVexNode* p = G.vexs[v_loc].firstArc; p; p = p->next) {
+        if (p->adjvex == w_loc && p->weight == weight) {
+            p->weight = newWeight;
+        }
+    }
+    for (AdjVexNode* p = G.vexs[w_loc].firstArc; p; p = p->next) {
+        if (p->adjvex == v_loc && p->weight == weight) {
+            p->weight = newWeight;
+            return OK;
+        }
+    }
+    return ERROR;
+}
+
+// #include "heap.h"
+// #include "union_find_sets.h"
+
+// typedef struct {
+// 	VexNode* vexs; // 顶点数组。vertex, 顶点
+// 	int n, e; // n: 顶点数; e: 边数（弧数）
+// 	int* tags; // 标志数组，可用于在图的遍历中标记顶点访问与否
+// } DN;
+
+// // 深度优先遍历并打印连通图G，i为遍历起点顶点在G.vexs中的下标
+// void DFSprint(UDN& G, int i) {
+//     if (i < 0 || i >= G.n) {
+//         return;
+//     }
+//     printf("%d\t", G.vexs[i].id);
+//     if (G.vexs[i].name == NULL) {
+//         printf("（空）\t");
+//     }
+//     else {
+//         printf("%s\t", G.vexs[i].name);
+//     }
+//     if (G.vexs[i].vexInfo == NULL) {
+//         printf("（空）\t\n");
+//     }
+//     else {
+//         printf("%s\t\n", G.vexs[i].vexInfo);
+//     }
+//     G.tags[i] = 1;
+//     if (NULL != G.vexs[i].firstArc && G.tags[G.vexs[i].firstArc->adjvex] == 0) {
+//         DFSprint(G, G.vexs[i].firstArc->adjvex);
+//     }
+// }
+
+// // 深度优先遍历并打印图G
+// void DFS(UDN& G) {
+//     memset(G.tags, sizeof(int) * G.n, 0);
+//     for (int i = 0;i < G.n; ++i) {
+//         if (G.tags[i] == 0) {
+//             DFSprint(G, i);
+//         }
+//     }
+// }
+
+
+
+// // 根据给定的顶点位置数组locs和顶点个数n，生成子图
+// void GenerateSubGraph(UDN G, int* locs, int n, UDN& T) {
+//     // 建立数组（哈希表），映射：locs数组的下标->(locs数组的元素->)G.vexs[locs].id
+//     int ids[n] = {0};
+//     for (int i = 0; i < n; ++i) {
+//         ids[i] = G.vexs[locs[i]].id;
+//     }
+//     // 初始化T
+//     T.vexs = (VexNode*)malloc(sizeof(VexNode) * n);
+//     T.e = 0;
+//     T.n = n;
+//     T.tags = (int*)malloc(sizeof(int) * n);
+//     memset(T.tags, 0, sizeof(int) * n);
+//     for (int i = 0; i < n; ++i) {
+//         int loc = locs[i];
+//         T.vexs[i].id = G.vexs[loc].id;
+//         T.vexs[i].name = G.vexs[loc].name;
+//         T.vexs[i].vexInfo = G.vexs[loc].vexInfo;
+//         T.vexs[i].firstArc = NULL;
+//     }
+//     for (int i = 0; i < n; ++i) {
+//         int loc = locs[i];
+//         for (AdjVexNode* p = G.vexs[loc].firstArc; p; p = p->next) {
+//             if (loc < p->adjvex && -1 != SearchInArray(locs, p->adjvex, n)) {
+//                 SetDirectedArc(T, G.vexs[loc].id, G.vexs[p->adjvex].id, p->weight);
+//             }
+//         }
+//     }
+// }
+
+// // TopSq: top序列，top排序算法辅助结构
+// // sq：存放顶点在G.vexs中的下标
+// // n：top序列长度
+// typedef struct {
+//     int* sq;
+//     int n;
+// } TopSq;
+
+// // 初始化拓扑排序辅助类型TopSq
+// void InitTopSq(TopSq& TS, int n) {
+//     TS.sq = (int*)malloc(sizeof(int) * n);
+//     TS.n = 0;
+// }
+
+// // 拓扑排序
+// Status ToplogicalSort(UDN G, TopSq& TS) {
+//     // 将有向图转化为无向图
+//     UDN_to_DN(G);
+//     // 辅助数组indegree，记录顶点入度
+//     int* indegree = (int*)malloc(sizeof(int) * G.n);
+//     memset(indegree, 0, sizeof(int) * G.n);
+//     // 辅助队列Q
+//     LQueue Q;
+//     InitQueue_LQ(Q);
+//     // 初始化辅助结构TopSq拓扑序列
+//     InitTopSq(TS, G.n);
+//     // 计算所有顶点的入度，存入indegree
+//     for (int i = 0; i < G.n; ++i) {
+//         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+//             ++indegree[p->adjvex];
+//         }
+//     }
+//     // 搜寻所有入度为0的顶点，入队
+//     for (int i = 0; i < G.n; ++i) {
+//         if (0 == indegree[i]) {
+//             EnQueue_LQ(Q, i);
+//         }
+//     }
+//     // 反复出队、加入拓扑序列、删除所有其出度的弧、搜寻、入队……
+//     int i = -1, count = 0;
+//     while (OK == DeQueue_LQ(Q, i)) {
+//         TS.sq[TS.n++] = i;
+//         ++count;
+//         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+//             if (0 == --indegree[p->adjvex]) {
+//                 EnQueue_LQ(Q, p->adjvex);
+//             }
+//         }
+//     }
+//     // 释放辅助数组indegree空间
+//     free(indegree);
+//     // 判断是否成功生成拓扑序列
+//     if (count < G.n) {
+//         return ERROR;
+//     }
+//     return OK;
+// }
+
+
+// // 无向图 -> 有向图
+// void UDN_to_DN (UDN& G) {
+//     for (int i = 0; i < G.n; ++i) {
+//         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+//             int j = p->adjvex;
+//             AdjVexNode* q = G.vexs[j].firstArc;
+//             AdjVexNode* tmp = NULL;
+//             if (q && q->adjvex == i) {
+//                 tmp = q;
+//                 G.vexs[j].firstArc = q->next;
+//             }
+//             else {
+//                 for (; q && q->next; q = q->next) {
+//                     if (q->next->adjvex == i) {
+//                         tmp = q->next;
+//                         q->next = q->next->next;
+//                     }
+//                 }
+//             }
+//             free(tmp);
+//         }
+//     }
+// }
+
+// // 求最小生成树：Kruscal算法
+// // 构造G的最小生成树T
+// Status Kruscal(UDN G, UDN& T) {
+//     // 初始化T
+//     T.n = G.n;
+//     T.e = 0;
+//     T.vexs = (VexNode*)malloc(sizeof(VexNode) * T.n);
+//     memmove(T.vexs, G.vexs, sizeof(VexNode) * T.n);
+//     for (int i = 0; i < T.n; ++i) {
+//         T.vexs[i].firstArc  = NULL;
+//     }
+//     // 初始化并查集
+//     MFSet S;
+//     InitMFSet(S, T.n);
+//     // 准备辅助数组arcs
+//     KruscalRcdType* arcs = (KruscalRcdType*)malloc((G.e + 1) * sizeof(KruscalRcdType));
+//     int j = 1;
+//     // 开始计算
+//     Heap H;
+//     for (int i = 0; i < T.n; ++i) {
+//         for (AdjVexNode* p = G.vexs[i].firstArc; p; p = p->next) {
+//             if (i < p->adjvex) {
+//                 arcs[j].v = i;
+//                 arcs[j].w = p->adjvex;
+//                 arcs[j].key = p->weight;
+//                 ++j;
+//             }
+//         }
+//         MakeHeap(H, arcs, G.e, G.e + 1, 0, lessPrior);
+//         for (int i = 0; i < G.e; ++i) {
+//             RcdType tmp;
+//             RemoveFirstHeap(H, tmp);
+//             int v_id = G.vexs[tmp.v].id;
+//             int w_id = G.vexs[tmp.w].id;
+//             if (UnionMFSet(S, tmp.v, tmp.w)) {
+//                 SetArc(T, v_id, w_id, tmp.key);
+//                 if (T.e == G.n - 1) {
+//                     break;
+//                 }
+//             }
+//         }
+//     }
+// }
+
+// 搜索顶点
+// VexNode* SearchVex(UDN G, VexType id) {
+//     for (int i = 0; i < G.n; ++i) {
+//         if (G.vexs[i].id == id) {
+//             return &(G.vexs[i]);
+//         }
+//     }
+//     return NULL;
+// }
+
+
+// // 在图G中添加从顶点v到顶点w的弧
+// // G：图
+// // v_id：出度顶点
+// // w_id：入度顶点
+// // weight：权
+// Status SetDirectedArc(UDN &G, VexType v_id, VexType w_id, int weight) 
+// {  
+//     int v_loc = LocateVex(G, v_id);
+//     int w_loc = LocateVex(G, w_id);
+//     if (v_loc < 0 || w_loc < 0) {
+//         return ERROR;
+//     }
+//     AdjVexNode* node = (AdjVexNode*)malloc(sizeof(AdjVexNode));
+//     node->next = G.vexs[v_loc].firstArc;
+//     node->adjvex = w_loc;
+//     node->weight = weight;
+//     G.vexs[v_loc].firstArc = node;
+
+//     G.e++;
+//     return OK;
+// }

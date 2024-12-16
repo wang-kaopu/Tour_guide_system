@@ -185,7 +185,7 @@ Status InsertHeap(Heap& H, RcdType e) {
 	}
 	H.rcd[++H.n] = e;
 	for (int p = H.n;p / 2 >= 1 && H.prior(H.rcd[p].key, H.rcd[p / 2].key);p /= 2) {
-		SwapHeapElem(H, p, p / 2); //不用shiftDown是因为p的兄弟和p的父亲这两个一定有序，shiftDwon还会判断这对之后再决定是否交换
+		SwapHeapElem(H, p, p / 2); //不用shiftDown是因为p的兄弟和p的父亲这两个一定有序，shiftDown还会判断这对之后再决定是否交换
 	}
 	return OK;
 }
