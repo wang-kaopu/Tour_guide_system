@@ -557,46 +557,66 @@ void ModifyPathWeight(UDN& G) {
 
 int main() {
     UDN G;
+    // 初始化
     InitTouristGuideSystem(G);
+    // 打印全部景点和路径
     PrintAllDestinationAndPath(G);
     while (1) {
+        // 选择身份
         int identity = IdentityChoose();
+        // 游客身份
         while (identity == 1) {
+            // 游客操作选择
             int choice = TouristMenu();
             if (choice == 1) {
+                // 查看全部景点
                 OutputVexs(G);
             } else if (choice == 2) {
+                // 查看全部景点及其邻接路径
                 PrintAllDestinationAndPath(G);
             } else if (choice == 3) {
+                // 搜索景点
                 SearchDestination(G);
             } else if (choice == 4) {
+                // 查找最短路径
                 SearchShortestPath(G);
             } else if (choice == 5) {
+                // 规划路径
                 PlanPath(G);
             } else if (choice == 6) {
+                // 查找两点间的所有路径
                 SearchAllPaths(G);
             } else if (choice == 0) {
                 break;
             }
         }
+        // 管理员身份
         while (identity == 2) {
+            // 管理员操作选择
             int choice = ManagerMenu();
             if (choice == 1) {
+                // 查看全部景点
                 OutputVexs(G);
             } else if (choice == 2) {
+                // 查看全部景点及其邻接路径
                 PrintAllDestinationAndPath(G);
             } else if (choice == 3) {
+                // 搜索景点
                 SearchDestination(G);
             } else if (choice == 4) {
+                // 查找最短路径
                 SearchShortestPath(G);
             } else if (choice == 5) {
+                // 规划路径
                 PlanPath(G);
             } else if (choice == 6) {
+                // 查找两点间的全部路径
                 SearchAllPaths(G);
             } else if (choice == 7) {
                 // 随机生成景点之间的路径，并覆盖原有的路径信息
                 GenerateRandomPaths(G);
             } else if (choice == 8) {
+                // 添加景点
                 AddDestination(G);
             } else if (choice == 9) {
                 // 删除景点
