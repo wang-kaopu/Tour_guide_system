@@ -18,9 +18,10 @@ int IdentityChoose() {
     }
 }
 
+// 游客菜单
 int TouristMenu() {
-    int choice = 0;
-    while (!(choice <= 6 && choice >= 1)) {
+    int choice = -1;
+    while (!(choice <= 6 && choice >= 0)) {
         printf("现在是游客操作页面，请选择操作: \n");
         printf("1. 查看全部景点及其介绍 \n");
         printf("2. 查看全部景点及景点间的路径 \n");
@@ -28,10 +29,11 @@ int TouristMenu() {
         printf("4. 查找两个景点之间的最短路径 \n");
         printf("5. 规划一条经过多个景点的路径 \n");
         printf("6. 查找两个景点之间的所有路径 \n");
+        printf("0. 退出 \n");
         
         scanf("%d", &choice);
         ClearBuffer();
-        if (!(choice <= 6 && choice >= 1)) {
+        if (!(choice <= 6 && choice >= 0)) {
             printf("输入有误，请重新输入: \n");
         }
         else {
@@ -40,6 +42,7 @@ int TouristMenu() {
     }
 }
 
+// 打印所有景点及其邻接路径
 void PrintAllDestinationAndPath(UDN G) {
     VexNode* nodes = G.vexs;
     printf("|(ID).(景点名)|:\t邻接景点1 (ID).(名称)((该路径长度))\t\t……\n");
@@ -54,9 +57,10 @@ void PrintAllDestinationAndPath(UDN G) {
     printf("--------------------------------------------------------------------------------------------------\n");
 }
 
+// 管理员菜单
 int ManagerMenu() {
-    int choice = 0;
-    while (!(choice <= 13 && choice >= 1)) {
+    int choice = -1;
+    while (!(choice <= 13 && choice >= 0)) {
         printf("现在是管理员操作页面，请选择操作: \n");
         printf("1. 查看全部景点及其介绍 \n");
         printf("2. 查看全部景点及景点间的路径 \n");
@@ -71,10 +75,10 @@ int ManagerMenu() {
         printf("11. 增加景点之间的路径 \n");
         printf("12. 删除景点之间的路径 \n");
         printf("13. 修改景点之间的路径长度 \n");
-        
+        printf("0. 退出 \n");
         scanf("%d", &choice);
         ClearBuffer();
-        if (!(choice <= 13 && choice >= 1)) {
+        if (!(choice <= 13 && choice >= 0)) {
             printf("输入有误，请重新输入: \n");
         }
         else {
@@ -83,6 +87,8 @@ int ManagerMenu() {
     }
 }
 
+// 初始化图，生成默认信息
+// 随机生成路径
 void InitTouristGuideSystem(UDN& G) {
     VexType vexs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     char* name1 = (char*)malloc(sizeof("日月贝"));
@@ -110,7 +116,6 @@ void InitTouristGuideSystem(UDN& G) {
     char* name12 = (char*)malloc(sizeof("珠海渔女"));
     memcpy(name12, "珠海渔女", sizeof("珠海渔女"));
     
-
     char* names[] = { name1, name2, name3, name4, name5, name6, name7, name8, name9, name10, name11, name12 };
     ArcInfo arcs[20] = {};
     for (int i = 0; i < 20; ++i) {
@@ -125,6 +130,7 @@ void InitTouristGuideSystem(UDN& G) {
     CreateUDN(G, vexs, names, 12, arcs, 20);
 }
 
+// 查找景点
 void SearchDestination(UDN G) {
     int loc = -1;
     printf("现在是查找景点页面，请输入景点ID查找: \n");
@@ -143,6 +149,7 @@ void SearchDestination(UDN G) {
     }
 }
 
+// 查找最短路径
 void SearchShortestPath(UDN G) {
     int bg, ed, bg_loc, ed_loc;
     printf("现在是查找最短路径的界面\n");
@@ -173,21 +180,39 @@ void SearchShortestPath(UDN G) {
     }
 }
 
-void PrintQueuePath(UDN G, LQueue Q) {
-    if (Q.front == Q.rear) {
+// // 打印LQueue队列形式的路径
+// void PrintQueuePath(UDN G, LQueue Q) {
+//     if (Q.front == Q.rear) {
+//         return;
+//     }
+//     QueuePtr p = Q.front;
+//     printf("%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
+//     p = p->next;
+//     while (p->next) {
+//         printf("------>%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
+//         p = p->next;
+//     }
+//     printf("\n");
+// }
 
+// 打印LQueue队列形式的路径
+void PrintQueueFormPath(UDN G, LQueue Q) {
+    QueuePtr p = Q.front;
+    if (Q.front == Q.rear) {
         return;
     }
-    QueuePtr p = Q.front;
-    printf("%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
-    p = p->next;
-    while (p->next) {
-        printf("------>%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
-        p = p->next;
-    }
+	if (p->next) {
+		printf("%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
+	}
+	p = p->next;
+	while (p->next) {
+		printf("->%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
+		p = p->next;
+	}
     printf("\n");
 }
 
+// 规划一条经过多个景点的路径
 void PlanPath(UDN G) {
     printf("现在是规划路径的界面 \n");
     printf("请输入若干个景点的ID，其中第1个为起点，最后一个为终点 \n");
@@ -222,29 +247,14 @@ void PlanPath(UDN G) {
     InitQueue_LQ(Q);
     if (PathPlanning(G, locs, count, Q)) {
         printf("规划成功，以下是目标路径：\n");
-        PrintQueuePath(G, Q);
+        PrintQueueFormPath(G, Q);
     }
     else {
         printf("抱歉，暂无目标路径\n");
     }
 }
 
-void PrintQueueFormPath(UDN G, LQueue Q) {
-    QueuePtr p = Q.front;
-    if (Q.front == Q.rear) {
-        return;
-    }
-	if (p->next) {
-		printf("%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
-	}
-	p = p->next;
-	while (p->next) {
-		printf("->%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
-		p = p->next;
-	}
-    printf("\n");
-}
-
+// 打印CSTree树形式的多条路径
 void PrintTreeFormPaths(UDN G, CSTree tree, LQueue& Q) {
     if (NULL == tree) {
         printf("抱歉，暂无目标路径 \n");
@@ -273,6 +283,7 @@ void PrintTreeFormPaths(UDN G, CSTree tree, LQueue& Q) {
     DestroyQueue_LQ(T);
 }
 
+// 搜索两点间的所有路径
 void SearchAllPaths(UDN G) {
     printf("现在是搜索两个景点之间的所有路径的界面 \n");
     int bg, ed, bg_loc, ed_loc;
@@ -296,6 +307,7 @@ void SearchAllPaths(UDN G) {
     PrintTreeFormPaths(G, tree, Q);
 }
 
+// 随机生成路径
 void GenerateRandomPaths(UDN& G) {
     printf("现在是随机生成路径界面 \n");
     int choice = -1;
@@ -332,6 +344,7 @@ void GenerateRandomPaths(UDN& G) {
     }
 }
 
+// 添加景点
 void AddDestination(UDN& G) {
     printf("现在是添加景点界面 \n");
     printf("请输入景点名称，少于50个字符: \n");
@@ -363,6 +376,7 @@ void AddDestination(UDN& G) {
     printf("添加完成，即将退出添加景点界面 \n");
 }
 
+// 删除景点
 void DeleteDestination(UDN& G) {
     printf("现在是删除景点界面 \n");
     printf("请输入景点ID: \n");
@@ -389,6 +403,7 @@ void DeleteDestination(UDN& G) {
     }
 }
 
+// 修改景点介绍
 void ModifyDestinationInfo(UDN& G) {
     printf("现在是修改景点介绍界面 \n");
     printf("请输入景点ID: \n");
@@ -422,7 +437,6 @@ void ModifyDestinationInfo(UDN& G) {
     ClearBuffer();
     if (choice == 1) {
         printf("正在修改... \n");
-        // DeleteVex(G, id);
         ModifyVex(G, id, name, info);
         printf("修改成功 \n");
     } else {
@@ -430,6 +444,7 @@ void ModifyDestinationInfo(UDN& G) {
     }
 }
 
+// 添加路径
 void AddPathById(UDN& G) {
     printf("现在是添加景点间路径界面 \n");
     printf("请输入第一个景点ID: \n");
@@ -456,6 +471,7 @@ void AddPathById(UDN& G) {
     }
 }
 
+// 删除路径
 void DeletePathById(UDN& G){
     printf("现在是删除景点间路径界面 \n");
     printf("请输入第一个景点ID: \n");
@@ -495,6 +511,7 @@ void DeletePathById(UDN& G){
     }
 }
 
+// 修改路径长度
 void ModifyPathWeight(UDN& G) {
     printf("现在是修改景点间路径长度界面 \n");
     printf("请输入第一个景点ID: \n");
@@ -541,7 +558,6 @@ void ModifyPathWeight(UDN& G) {
 int main() {
     UDN G;
     InitTouristGuideSystem(G);
-    // PrintGraph(G);
     PrintAllDestinationAndPath(G);
     while (1) {
         int identity = IdentityChoose();
@@ -559,6 +575,8 @@ int main() {
                 PlanPath(G);
             } else if (choice == 6) {
                 SearchAllPaths(G);
+            } else if (choice == 0) {
+                break;
             }
         }
         while (identity == 2) {
@@ -595,10 +613,11 @@ int main() {
             } else if (choice == 13) {
                 // 修改景点之间的路径长度
                 ModifyPathWeight(G);
+            } else if (choice == 0) {
+                break;
             }
         }
     }
-
     return 0;
 }
     // UDN G;
