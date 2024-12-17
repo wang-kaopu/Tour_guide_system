@@ -142,9 +142,6 @@ void InitTouristGuideSystem(UDN& G) {
         "巨型石刻雕像，雕塑家潘鹤的杰作" //12
     };
     CreateUDN(G, vexs, names, 12, arcs, 25);
-    // for (int i = 0; i < 12; ++i) {
-    //     ModifyVex(G, G.vexs[i].id, names[i], info[i]);
-    // }
     for (int i = 0; i < 12; ++i) {
         if (NULL == G.vexs[i].vexInfo) {
             G.vexs[i].vexInfo = (char*)malloc(sizeof(char) * 150);
@@ -212,6 +209,7 @@ void SearchShortestPath(UDN G) {
 void PrintQueueFormPath(UDN G, LQueue Q) {
     QueuePtr p = Q.front;
     if (Q.front == Q.rear) {
+        printf("抱歉，暂无目标路径 \n");
         return;
     }
 	if (p->next) {
@@ -351,7 +349,7 @@ void GenerateRandomPaths(UDN& G) {
             }
             int v_id = G.vexs[v_loc].id;
             int w_id = G.vexs[w_loc].id;
-            int weight = rand() % 10 + 1;
+            int weight = rand() % 12 + 1;
             SetArc(G, v_id, w_id, weight);
         }
     }

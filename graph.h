@@ -577,7 +577,7 @@ Status PathPlanning(UDN G, int* locs, int n, LQueue& Q) {
     InitQueue_LQ(Q);
     int length = 0;
     DFSCount(tree, locs, n, Q, length);
-    if (length == n) {
+    if (QueueLength_LQ(Q) == n) {
         return TRUE;
     }
     return FALSE;
