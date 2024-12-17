@@ -117,17 +117,45 @@ void InitTouristGuideSystem(UDN& G) {
     memcpy(name12, "珠海渔女", sizeof("珠海渔女"));
     
     char* names[] = { name1, name2, name3, name4, name5, name6, name7, name8, name9, name10, name11, name12 };
-    ArcInfo arcs[20] = {};
-    for (int i = 0; i < 20; ++i) {
+    ArcInfo arcs[25] = {};
+    for (int i = 0; i < 25; ++i) {
         int v_id = rand() % 12 + 1;
         int w_id = v_id;
         while (w_id == v_id) {
             w_id = rand() % 12 + 1;
         }
-        int weight = rand() % 10 + 1;
+        int weight = rand() % 15 + 1;
         arcs[i] = {v_id, w_id, weight};
     }
-    CreateUDN(G, vexs, names, 12, arcs, 20);
+    char info[12][150] = {
+        "珠海大剧院，位于野狸岛", //1
+        "充满浪漫气息的特殊邮局", //2
+        "美丽的海滨风光和丰富的旅游资源", //3
+        "以自行车驿站为主题的户外休闲乐园", //4
+        "充满历史气息和现代活力相结合的公园", //5
+        "大湾区三地互通、客货兼重的陆路口岸之一", //6
+        "融入动人传说故事的自然景观", //7
+        "金台寺，珠海地区最古老的寺院", //8
+        "珠海市溯源地，保留众多名人故居", //9
+        "山海相拥、陆岛相望的公共服务中心节点", //10
+        "以形态各异的钟乳石而闻名", //11
+        "巨型石刻雕像，雕塑家潘鹤的杰作" //12
+    };
+    CreateUDN(G, vexs, names, 12, arcs, 25);
+    // for (int i = 0; i < 12; ++i) {
+    //     ModifyVex(G, G.vexs[i].id, names[i], info[i]);
+    // }
+    for (int i = 0; i < 12; ++i) {
+        if (NULL == G.vexs[i].vexInfo) {
+            G.vexs[i].vexInfo = (char*)malloc(sizeof(char) * 150);
+        }
+        memset(G.vexs[i].vexInfo, '\0', 150);
+        memcpy(G.vexs[i].vexInfo, info[i], 150);    
+    }
+    for (int i = 0; i < 12; ++i) {
+        free(names[i]);
+        names[i] = NULL;
+    }
 }
 
 // 查找景点
@@ -179,21 +207,6 @@ void SearchShortestPath(UDN G) {
         printf("\n");
     }
 }
-
-// // 打印LQueue队列形式的路径
-// void PrintQueuePath(UDN G, LQueue Q) {
-//     if (Q.front == Q.rear) {
-//         return;
-//     }
-//     QueuePtr p = Q.front;
-//     printf("%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
-//     p = p->next;
-//     while (p->next) {
-//         printf("------>%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
-//         p = p->next;
-//     }
-//     printf("\n");
-// }
 
 // 打印LQueue队列形式的路径
 void PrintQueueFormPath(UDN G, LQueue Q) {
@@ -756,4 +769,19 @@ int main() {
         //     p = p->next;
         // }
     // PrintQueue_LQ(Q);
+// }
+
+// // 打印LQueue队列形式的路径
+// void PrintQueuePath(UDN G, LQueue Q) {
+//     if (Q.front == Q.rear) {
+//         return;
+//     }
+//     QueuePtr p = Q.front;
+//     printf("%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
+//     p = p->next;
+//     while (p->next) {
+//         printf("------>%d.%s", G.vexs[p->data].id, G.vexs[p->data].name);
+//         p = p->next;
+//     }
+//     printf("\n");
 // }

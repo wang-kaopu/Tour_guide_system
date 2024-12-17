@@ -151,7 +151,17 @@ Status CreateUDN(UDN &G, VexType *vexs, char** name, int n, ArcInfo *arcs, int e
     G.e = e;
     G.vexs = (VexNode*)malloc(sizeof(VexNode) * n);
     for (int i = 0; i < n; i++) {
-        G.vexs[i] = {vexs[i], name == NULL ? NULL : name[i], NULL};
+        G.vexs[i].id = vexs[i];
+        G.vexs[i].name = (char*)malloc(sizeof(char) * 50);
+        if (NULL != name[i]) {
+            memset(G.vexs[i].name, '\0', sizeof(char) * 50);
+            memcpy(G.vexs[i].name, name[i], sizeof(char) * 50);
+        } else {
+            name = NULL;
+        }
+        G.vexs[i].vexInfo = NULL;
+        G.vexs[i].firstArc = NULL;
+        // G.vexs[i] = {vexs[i], name == NULL ? NULL : name[i], NULL};
     }
     for (int i = 0; i < e; i++) {
         AdjVexNode* p = SearchArc(G, arcs[i].v_id, arcs[i].w_id);
