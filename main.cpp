@@ -566,12 +566,20 @@ void ModifyPathWeight(UDN& G) {
     }
 }
 
+void PrintDesigner() {
+	printf("姓名：王坤平\n");
+	printf("学号：3123004758\n");
+	printf("专业：计算机科学与技术\n");
+	printf("班级：23级3班\n\n");
+}
+
 int main() {
     UDN G;
     // 初始化
     InitTouristGuideSystem(G);
     // 打印全部景点和路径
     PrintAllDestinationAndPath(G);
+    PrintDesigner();
     while (1) {
         // 选择身份
         int identity = IdentityChoose();
